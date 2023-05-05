@@ -1,0 +1,56 @@
+---
+title: "Reading HRS Cognitive Data"
+author: "Guillaume"
+date: "2023-04-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HRS data
+
+
+## Cognition data
+We are interested in the following cognition data. The section where the data can be found is called Cognition, in some waves (i.e. years) it is section C, in other waves it is section D.
+
+To find in which section it is, read the "Section" section  of the Data description file.
+
+The indicators are available in all waves but it would be better to consider the period 1996-2020, since in this period the variables should be coded in the same way.
+
+We want data on all the following variables:
+ 
+_Latent variable Episodic Memory_
+
+* WORDS Recall Immediate (count 0-10): RD174, RD174W
+* WORDS Delayed (count 0-10): RD184, RD184W
+
+_Latent variable Mental status_
+
+* Date Month (Binary): RD151
+* Date Day (Binary): RD152
+* Date Year (Binary): RD153
+* Date Day/Week (Binary): RD154
+* Cut Paper (Binary): RD155
+* Cactus (Binary): RD156
+* President (Binary): RD157
+* Vice president (Binary):RD158
+* Series 7 (count 0-5): which one ? (RD142, RD143, RD144, RD145, RD146)
+* Count Backwards (ordinal 0-2): RD120
+
+_Demographic variables_
+
+* Age: 
+* Level of Education: RB014
+* Gender
+* (Race not necessarly)
+
+## Downloading the files
+The files are available to download on [this page](https://hrsdata.isr.umich.edu/data-products/public-survey-data) and requires an authentication. We want the *zip* file that contains the "ready-to-use" `.dta` stata file, which we can load into `R` using the `haven` package.
+
+Every one of these *zip* files contain various individual data files, which are coded accorting to the section (e.g. Cognition is a "section"). We must addentify, for each year, the file that contains the cognition data. The demographic variables are in section 
+
+## Versions
+
+Some newer versions have web questionnaires and the data is encoded differently

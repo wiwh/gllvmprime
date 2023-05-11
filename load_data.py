@@ -207,6 +207,8 @@ backwards = (myarray[:, variable_location['backwards'][0], :] == 1)  * 1. + (mya
 backwards = backwards[:, np.newaxis,:]
 backwards[backwards_nan] = np.nan
 
+data['backwards'] = backwards
+
 #%% Recall_immediate
 #-------------------
 # The data has already been processed
@@ -221,4 +223,4 @@ data['recall_delayed'] = myarray[:,variable_location['recall_delayed']][:,np.new
 #%% Create the final array and save
 # -------------------------------
 data_final = np.concatenate([arr for arr in data.values()], axis=1)
-np.save(save_path, myarray)
+np.save(save_path, data_final)

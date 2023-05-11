@@ -36,15 +36,20 @@ _Latent variable Mental status_
 * Cactus (Binary): RD156
 * President (Binary): RD157
 * Vice president (Binary):RD158
-* Series 7 (count 0-5): which one ? (RD142, RD143, RD144, RD145, RD146)
-* Count Backwards (ordinal 0-2): RD120
+* Series 7 (count 0-5): (RD142, RD143, RD144, RD145, RD146): int, 998=don't know, 999=refused, , NA=not ascertained
+* Count Backwards (ordinal 0-2): RD120, RD125
 
 _Demographic variables_
 
-* Age: 
+* Birthyear: BIRTHYR
 * Level of Education: RB014
-* Gender
+* Gender: GENDER
 * (Race not necessarly)
+
+# Computing aggregates
+We  define the following 2 variables:
+
+* serie7: sum of correct. any NA yields NA. 
 
 ## Downloading the files
 The files are available to download on [this page](https://hrsdata.isr.umich.edu/data-products/public-survey-data) and requires an authentication. We want the *zip* file that contains the "ready-to-use" `.dta` stata file, which we can load into `R` using the `haven` package.

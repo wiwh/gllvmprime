@@ -209,7 +209,7 @@ class Sample(nn.Module):
                 Warning("x was set to None for sampling. X is usually fixed. Are you sure you want to sample x?")
                 x = torch.randn((n, self.setting['T'], self.setting['k']-1)).to(device)
                 # Add intercepts and time information
-                time_data = torch.from_numpy(np.linspace(0,4,9)).float().expand(x.shape[0], -1).unsqueeze(2).to(device)
+                time_data = torch.from_numpy(np.linspace(0,4,self.setting['T'])).float().expand(x.shape[0], -1).unsqueeze(2).to(device)
                 x = torch.cat([x, time_data], dim=2)
             
             n = x.shape[0]

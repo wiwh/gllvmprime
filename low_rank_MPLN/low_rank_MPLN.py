@@ -22,18 +22,24 @@ class MPLN(nn.Module):
         # Create Poisson regression model with L2 regularization
         self.poissonSolver =  PoissonRegressor(alpha=1/(num_features), fit_intercept=True) # TODO: check this intercept
     
+    def to(self, *args, **kwargs):
+        self.V = self.V.to(*args, **kwargs)
+        super().to(*args, **kwargs)
+
+        return self
+
     def forward(self, W, X=None, invlink=torch.exp):
         if X is None:
-            X = torch.zeros((W.shape[0], 0))
+            X = torch.zeros((W.shape[0], 0)).to(self.V.device)
         # Get the linpar (Z above) from the eigendecomposition
-        VA = self.V * torch.sqrt(torch.exp(self.a.unsqueeze(0))) # TODO: a is in fact log_a
+        VA = self.V * torch.sqrt(torch.exp(self.a.unsqueeze(0)))
         linpar = X @ self.B.T + W @ VA.T
         condmean = linpar if invlink is None else invlink(linpar)
         return linpar, condmean
 
     def sample(self, n, X=None, poisson=True):
         with torch.no_grad():
-            W = torch.randn((n, self.num_latents))
+            W = torch.randn((n, self.num_latents)).to(self.V.device)
 
             if poisson is True:
                 _, condmean = self(W, X, invlink=torch.exp)
@@ -115,7 +121,7 @@ class MPLN(nn.Module):
 
         return self, train_losses, val_losses
 
-    def train_model(self, X, data, A_init = None, num_epochs=1000, transform=False, verbose=False, avg_last=50):
+    def train_model(self, X, data, A_init = None, num_epochs=1000, transform=False, verbose=False, avg_last=50, lr=(1., 0.01), gamma=(.95,.95), clip_value=0.05, encoder_epochs=10):
         if A_init is not None:
             self.a = torch.nn.Parameter(A_init)
         
@@ -123,14 +129,14 @@ class MPLN(nn.Module):
 
         criterion =  MELoss()
         # Define optimizer
-        optimizer = torch.optim.SGD(self.parameters(), lr=1.0)
+        optimizer = torch.optim.SGD(self.parameters(), lr=lr[0])
 
         # Define learning rate scheduler
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.95)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=gamma[0])
 
 
-        encoder_optimizer = torch.optim.Adam(self.encoder.parameters(), lr=0.01)
-        encoder_scheduler = torch.optim.lr_scheduler.StepLR(encoder_optimizer, step_size=10, gamma=0.99)
+        encoder_optimizer = torch.optim.Adam(self.encoder.parameters(), lr=lr[1])
+        encoder_scheduler = torch.optim.lr_scheduler.StepLR(encoder_optimizer, step_size=5, gamma=gamma[1])
         encoder_criterion = nn.MSELoss()
 
 
@@ -139,10 +145,11 @@ class MPLN(nn.Module):
         b_values = []
 
         # Training loop
-
         self.train()
+        # We start by training the encoder
+
         for epoch in range(num_epochs):
-            _, encoder_loss, _ = self.train_encoder(sample_size, X=X, optimizer=encoder_optimizer, criterion=encoder_criterion, num_epochs=5, validation_data=None, sample=True, verbose=False)
+            _, encoder_loss, _ = self.train_encoder(sample_size, X=X, optimizer=encoder_optimizer, criterion=encoder_criterion, num_epochs=encoder_epochs, validation_data=None, sample=True, verbose=False)
 
             optimizer.zero_grad()
             
@@ -165,7 +172,7 @@ class MPLN(nn.Module):
             loss = criterion(data['Y'], linpar, data_sim['Y'], linpar_sim, transform=transform)
             
             loss.backward()
-            clip_grad_value_(self.parameters(), clip_value=0.2)
+            clip_grad_value_(self.parameters(), clip_value=clip_value)
             optimizer.step()
             
 
@@ -194,11 +201,11 @@ class MPLN(nn.Module):
         B_last_avg = np.mean(bb[-avg_last:], axis=0)
 
         results = {
-            'A' : self.a.detach().numpy(),
+            'A' : self.a.detach().cpu().numpy(),
             'A_hist' : A_hist,
             'A_last': A_last,
             'A_last_avg' : A_last_avg,
-            'B' : self.B.detach().numpy(),
+            'B' : self.B.detach().cpu().numpy(),
             'B_hist': B_hist,
             'B_last': B_last,
             'B_last_avg': B_last_avg
@@ -244,6 +251,16 @@ class MELoss(nn.Module):
 
 
 def save_model_fit(sim_name, sim_iter, sim_path="", model=None, fit=None):
+    """
+    Save both the model and fit data to specified paths.
+    
+    Parameters:
+    - sim_name (str): Base name of the simulation.
+    - sim_iter (int): Iteration or version of the simulation.
+    - sim_path (str, optional): Base directory path for saving. Defaults to the current directory.
+    - model (torch.nn.Module, optional): PyTorch model to be saved. If None, no model will be saved.
+    - fit (dict, optional): Dictionary containing fit data to be saved. If None, no fit data will be saved.
+    """
     # Define folders
     sim_path = Path(sim_path) / sim_name
     sim_name = f'{sim_name}_{sim_iter}'
@@ -263,6 +280,21 @@ def save_model_fit(sim_name, sim_iter, sim_path="", model=None, fit=None):
         np.savez(path_fit, **fit)
 
 def load_model_fit(sim_name, sim_iter, sim_path="", load_model=True, load_fit=True):
+    """
+    Load both the model and fit data from specified paths.
+    
+    Parameters:
+    - sim_name (str): Base name of the simulation.
+    - sim_iter (int): Iteration or version of the simulation.
+    - sim_path (str, optional): Base directory path for loading. Defaults to the current directory.
+    - load_model (bool, optional): Whether to load the model. If False, the returned model will be None.
+    - load_fit (bool, optional): Whether to load the fit data. If False, the returned fit data will be None.
+    
+    Returns:
+    - model (torch.nn.Module or None): Loaded PyTorch model or None if `load_model` is False.
+    - fit (dict or None): Dictionary containing loaded fit data or None if `load_fit` is False.
+    """
+
     # Define folders
     sim_path = Path(sim_path) / sim_name
     sim_name = f'{sim_name}_{sim_iter}'
@@ -317,4 +349,6 @@ def gen_X(n, num_covariates, intercept=True):
     if intercept and num_covariates > 0:
         X[:,0] = 1
     return X
+
+
 

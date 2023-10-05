@@ -134,6 +134,7 @@ class LongitudinalGLLVM(nn.Module):
 
             # Update nuisance parameters
             with torch.no_grad():
+                
                 self.sample.var_u.data = .8* self.sample.var_u.data + .2 * torch.var(uhat_sample) * (self.sample.var_u.data / torch.var(uhat_sim))
                 self.sample.phi.data = .8 * self.sample.phi.data + .2 * self.compute_autocorr(zhat_sample) * self.sample.phi.data / self.compute_autocorr(zhat_sim)
 

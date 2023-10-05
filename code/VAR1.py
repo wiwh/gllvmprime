@@ -1,4 +1,8 @@
 import torch
+import matplotlib.pyplot as plt
+
+
+import torch
 import torch.nn as nn
 import warnings
 
@@ -55,6 +59,34 @@ class VAR1(nn.Module):
         
         return z
     
+    def backward(self, z):
+        """
+        Goes backward: from z, find epsilon
+
+        Parameters:
+        - z (torch.Tensor): Generated sequence following the VAR1 process. 
+        Shape: (num_batch, num_seq, num_features).
+
+        Returns:
+        - epsilon (torch.Tensor): Matrix of shocks that generated the sequence z.
+        Shape: (num_batch, num_seq, num_features).
+        """
+        # Ensure the last dimension of z matches the size of A.
+        assert(z.shape[2] == self.A.shape[0])
+        
+        # Initialize a tensor to hold the recovered shocks.
+        epsilon = torch.zeros_like(z)
+        
+        # For the first period, z_0 = epsilon_0 * sqrt(exp(logvar_z1))
+        epsilon[:, 0, :] = z[:, 0, :] / torch.sqrt(torch.exp(self.logvar_z1)).unsqueeze(0)
+        
+        # Loop over time to compute the shocks epsilon.
+        for i in range(1, z.shape[1]):
+            epsilon[:, i] = z[:, i] - (self.A @ z[:, i-1].unsqueeze(-1)).squeeze(-1)
+            
+        return epsilon
+
+
     def sample(self, num_batch, seq_length):
         """
         Sample a random AR1.

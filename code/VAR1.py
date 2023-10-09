@@ -55,7 +55,7 @@ class VAR1(nn.Module):
         
         # Loop over time to apply the VAR1 process.
         for i in range(1, epsilon.shape[1]):
-            z[:, i] = (self.A @ z[:, i-1].unsqueeze(-1)).squeeze(-1) + epsilon[:, i]
+            z[:, i] = (self.A @ z[:, i-1].clone().unsqueeze(-1)).squeeze(-1) + epsilon[:, i]
         
         return z
     

@@ -121,6 +121,7 @@ class MPLN(nn.Module):
 
         return self, train_losses, val_losses
 
+
     def train_model(self, X, data, A_init = None, num_epochs=1000, transform=False, verbose=False, avg_last=50, lr=(1., 0.01), gamma=(.95,.95), clip_value=0.05, encoder_epochs=10):
         if A_init is not None:
             self.a = torch.nn.Parameter(A_init)

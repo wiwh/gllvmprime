@@ -117,7 +117,7 @@ class LongitudinalGLLVM(nn.Module):
                 zhat_sim, uhat_sim = self.encoder(data_sim["x"], y_sim_masked, transform_response=True)
 
 
-            # train the encoder on the simulated data
+            # train the encoder on the simulated data: importantly this needs to be done after the imputation to unwanted sample dependence
             encoder_loss = self.encoder.fit(data_sim["x"], data_sim["y"], data_sim["z"], data_sim["u"],  epochs= 20) 
             
             # compute the decoded value

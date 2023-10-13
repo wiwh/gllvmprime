@@ -5,6 +5,7 @@ import numpy as np
 from VAR1 import VAR1
 from typing import Type, Optional, Tuple
 import matplotlib.pyplot as plt
+import warnings
 
 class VARGLLVM(nn.Module):
     """
@@ -21,6 +22,7 @@ class VARGLLVM(nn.Module):
     - num_covar: int, Number of observed covariates.
     - response_types: dict, Mapping of response type to its indices.
     - add_intercepts: bool, Whether to include intercepts in the model.
+    - fixed_first_loading: bool, Whether to fix to 1. the first loading.
     
     Key Methods:
     - forward: Computes the conditional mean of the model.
@@ -46,7 +48,7 @@ class VARGLLVM(nn.Module):
     u_{i} ~ N_p(0, I).
     """
     
-    def __init__(self, num_var, num_latent, num_covar, response_types, add_intercepts = True):
+    def __init__(self, num_var, num_latent, num_covar, response_types, add_intercepts = True, VAR1_intercept=False, VAR1_slope=False, fixed_first_loading=False, linpred_max = 10):
         super().__init__()
         self.response_types =  response_types
         self.response_link = {
@@ -68,12 +70,21 @@ class VARGLLVM(nn.Module):
         self.num_var = num_var
         self.num_latent = num_latent
         self.num_covar = num_covar
+        self.linpred_max = linpred_max
 
         # Define Parameters
         # -----------------
         # Parameters for the VAR
         self.A = nn.Parameter(torch.zeros((num_latent, num_latent)))
         self.logvar_z1 = nn.Parameter(torch.zeros((num_latent,)))
+        if VAR1_intercept:
+            self.VAR1_intercept = nn.Parameter(torch.zeros(num_latent))
+        else:
+            self.VAR1_intercept = None
+        if VAR1_slope:
+            self.VAR1_slope = nn.Parameter(torch.zeros(num_latent))
+        else:
+            self.VAR1_slope = None
 
         # Parameters for the outcome model
         if add_intercepts:
@@ -81,15 +92,31 @@ class VARGLLVM(nn.Module):
         else:
             self.intercepts = None
 
-        self.wz = nn.Parameter(torch.randn((num_latent, num_var)))
-        self.wx = nn.Parameter(torch.randn((num_covar, num_var)))
+        self.wz = nn.Parameter(torch.randn((num_latent, num_var))*0.1)
+        self.wx = nn.Parameter(torch.randn((num_covar, num_var))*0.1)
 
         # Parameters for the random effects
         self.logvar_u = nn.Parameter(torch.zeros((num_var,)))
         
         # Define Modules
         # --------------
-        self.VAR1 = VAR1(A=self.A, logvar_z1 = self.logvar_z1)
+        self.VAR1 = VAR1(A=self.A, logvar_z1 = self.logvar_z1, beta_0 = self.VAR1_intercept, beta_1 = self.VAR1_slope)
+
+        # Identification matters:
+        # -----------------------
+
+        self.fixed_first_loading = fixed_first_loading
+        if self.fixed_first_loading:
+            # set the diagonal loadings to 1
+            self.loading_mask = torch.eye(self.num_latent, self.num_var).bool()
+            self.wz.data = self.wz.data - (self.loading_mask * self.wz.data) + self.loading_mask
+            # Register backward hook that prevents updating these
+            self.wz.register_hook(self.zero_grad_hook)
+
+    def zero_grad_hook(self, grad):
+        # Set the gradient of the diagonal loadings to 1
+        grad[self.loading_mask] = 0.
+        return grad
 
     def forward(self, epsilon, u, x = None):
         """
@@ -120,13 +147,16 @@ class VARGLLVM(nn.Module):
 
         # add latent variables' effects
         z = self.VAR1(epsilon)
+
         linpar += z @ self.wz
 
         # finally, add random effects
         linpar += u * torch.sqrt(torch.exp(self.logvar_u[None, None, :])) # we add a time dimension: u is the same across time!
         
+        linpar = linpar.clamp(-self.linpred_max, self.linpred_max)
         # compute the conditional mean
         condmean = self.linpar2condmean(linpar)
+
         return (linpar, condmean)
     
     def sample(self, batch_size, seq_length,  x = None, epsilon = None, u = None):
@@ -205,7 +235,10 @@ class MELoss(nn.Module):
     
     def forward(self, y, linpar, ys, linpars, mask=None):
         """Computes the loss. hat is recontructed y, ys is simulated"""
-        loss = -torch.sum(y * linpar - ys * linpars) / y.shape[0] 
+        if mask is not None:
+            loss = -torch.sum((y * linpar - ys * linpars) * ~mask )/ y.shape[0]
+        else: 
+            loss = -torch.sum(y * linpar - ys * linpars) / y.shape[0] 
         return loss
 
 
@@ -219,12 +252,13 @@ class Encoder(nn.Module):
         - num_latent: dimension of latent variables (for a single period)
         - num_hidden: number of hidden units. I would advise fully connected except for large number of covar
     """
-    def __init__(self, num_var: int, num_covar: int, num_latent: int, num_hidden: int):
+    def __init__(self, num_var: int, num_covar: int, num_latent: int, num_hidden: int, transform=True):
         super().__init__()
         
         self.num_var = num_var
         self.num_covar = num_covar
         self.num_latent = num_latent
+        self.transform = transform
 
         self.fc = nn.Sequential(
             nn.Linear(num_var + num_covar, num_hidden),
@@ -262,6 +296,9 @@ class Encoder(nn.Module):
         
         # Forward pass
         # ------------
+        if self.transform:
+            with torch.no_grad():
+                y = VARGLLVM_model.transform_responses(y)
         if x is None:
             xy = y
         else:
@@ -272,7 +309,7 @@ class Encoder(nn.Module):
 
         out_z = out[:, :, :self.num_latent]
         out_epsilon = VARGLLVM_model.VAR1.backward(out_z)
-
+        
         out_u_scaled = out[:, :, self.num_latent:]
         out_u = out_u_scaled / torch.sqrt(torch.exp(VARGLLVM_model.logvar_u[None, None, :]))
         out_u = torch.mean(out_u, dim=1).unsqueeze(1)
@@ -287,7 +324,7 @@ class Encoder(nn.Module):
         return (out_epsilon, out_u)
     
 
-def impute_values(model, encoder, y, mask, x=None, impute_with=None):
+def impute_values(model, encoder, y, mask, x=None, impute_with=None, keep_within_range=True):
     """
     Imput the missing values: returns y with all missing values marked as True in the mask is imputed.
 
@@ -295,6 +332,7 @@ def impute_values(model, encoder, y, mask, x=None, impute_with=None):
         - model: the VARGLLVM model
         - mask: a boolean tensor like y with True if missing and False otherwise
         - impute_with: if epsilon or u are missing, impute the missing value with the value in impute_with, otherwise encode/decode
+        - keep_within_range: for all variables, keeps the imputed values within the range of the observed values.
     """
 
     if impute_with is not None:
@@ -303,6 +341,12 @@ def impute_values(model, encoder, y, mask, x=None, impute_with=None):
         epsilon, u = encoder(y, model, x=x)
         _, condmean = model(epsilon, u, x)
         y[mask] = condmean[mask]
+
+    if keep_within_range:
+
+        y_max_observed = y[~mask].max(dim=0)[0].max(dim=0)[0]
+        y_min_observed = y[~mask].min(dim=0)[0].min(dim=0)[0]
+        y = torch.clamp(y, y_min_observed, y_max_observed)
 
     return y
     
@@ -329,11 +373,8 @@ def train_encoder(encoder, VARGLLVM_model, criterion, optimizer, num_epochs=100,
     encoder.train()
     VARGLLVM_model.eval()
 
-    if data is not None:
-        if sample:
-            print("Sample is True: supplied 'data' is ignored.")
-        with torch.no_grad():
-            y_transformed = VARGLLVM_model.transform_responses(data['y'])
+    if data is not None and sample:
+        print("Sample is True: supplied 'data' is ignored.")
 
     num_latent = VARGLLVM_model.wz.shape[0]
     num_var  = VARGLLVM_model.wz.shape[1]
@@ -345,14 +386,12 @@ def train_encoder(encoder, VARGLLVM_model, criterion, optimizer, num_epochs=100,
             with torch.no_grad():
                 data = VARGLLVM_model.sample(batch_size, seq_length, x=x)
                 if mask is not None:
-                    data['y'] = impute_values(VARGLLVM_model, encoder, data['y'], mask, data['x'], impute_with=impute_with)
-                y_transformed = VARGLLVM_model.transform_responses(data['y'])       
+                    data['y'] = impute_values(VARGLLVM_model, encoder, data['y'], mask, data['x'], impute_with=impute_with)  
 
-        epsilon, u = encoder(y=y_transformed, VARGLLVM_model=VARGLLVM_model, x=data['x'])
+        epsilon, u = encoder(data['y'], VARGLLVM_model=VARGLLVM_model, x=data['x'])
         
         tot_weight = num_var + num_latent
-        loss = (criterion(epsilon, data['epsilon']) * num_latent/tot_weight +
-                criterion(u, data['u']) * num_var/tot_weight)
+        loss = criterion(epsilon, data['epsilon']) * num_latent/tot_weight + criterion(u, data['u']) * tot_weight/tot_weight
         
         loss.backward()
         optimizer.step()
@@ -381,17 +420,18 @@ def train_decoder(model, encoder, criterion, optimizer, data, num_epochs=100, tr
                 if mask is not None:
                     data['y'] = impute_values(model, encoder, data['y'], mask, data['x'], impute_with=impute_with)
                     data_sim['y'] = impute_values(model, encoder, data_sim['y'], mask, data['x'], impute_with=impute_with)
+                    # TODO (remove) print(f"NA in data: {torch.isnan(data['y']).sum()}, {torch.isnan(data_sim['y']).sum()}")
 
                 # encode
                 data_epsilon, data_u = encoder(data['y'], model, data['x'])
                 data_sim_epsilon, data_sim_u = encoder(data_sim['y'], model, data_sim['x'])
 
-
+            # TODO (remove) print(f"has na? epsilon: {torch.sum(torch.isnan(data_epsilon))}, u: {torch.sum(torch.isnan(data_u))}")
             
             linpar, _ = model(data_epsilon, data_u, data['x'])
             linpar_sim, _ = model(data_sim_epsilon, data_sim_u, data['x'])
 
-
+            # TODO (remove) print(f"max_linpar: {torch.max(torch.abs(linpar))}")
             
             if transform:
                 with torch.no_grad():
@@ -400,12 +440,31 @@ def train_decoder(model, encoder, criterion, optimizer, data, num_epochs=100, tr
             else :
                 y = data['y']
                 y_sim = data_sim['y']
-            loss = criterion(y, linpar, y_sim, linpar_sim)
+            loss = criterion(y, linpar, y_sim, linpar_sim, mask)  # TODO add mask
             
             loss.backward()
             clip_grad_value_(model.parameters(), clip_value=clip_value)
             optimizer.step()
             
+            
+            # Check if it is stationary
+            A = model.A
+            if torch.linalg.matrix_norm(A, ord=2) >= 0.95:
+                with torch.no_grad():
+                    warnings.warn("||A||_2 >=0.95: VAR is potentially nonstationary, norm set to 0.95 instead.")
+                    
+                    # Compute the SVD
+                    U, S, V = torch.linalg.svd(A)
+                    
+                    # Adjust the largest singular value
+                    S[0] = 0.95
+                    
+                    # Reconstruct the matrix A
+                    A_adjusted = U @ torch.diag(S) @ V.T
+
+                    # Assign back to A or use A_adjusted as needed
+                    A[:] = A_adjusted
+
 
             if verbose: 
                 print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')

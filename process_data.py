@@ -34,7 +34,7 @@ from pathlib import Path
 # -----------------------------------------------
 data_path = Path("data/HRS/data")
 varnames_path = Path("data/HRS/variable_names.csv")
-save_path = Path("data/HRS/HRS_3Darray.npy")
+save_path = Path("data/HRS/HRS_3Darray_innerjoin.npy")
 years_series = list(range(2004, 2021, 2))
 
 # Create a variable_location dictionary
@@ -83,7 +83,7 @@ tracker = tracker[['BIRTHYR', "GENDER", "DEGREE"]]
 varnames = pd.read_csv(varnames_path)
 
 
-# Create a new dictionary 'data_new' to store selected variables from each DataFrame
+#%% Create a new dictionary 'data_new' to store selected variables from each DataFrame
 data_new = {}
 for y, df in data.items():
     # Select variables based on 'varnames[y]' and set 'HHID' and 'PN' as the index
@@ -94,7 +94,7 @@ for y, df in data.items():
     # Merge 'tracker' and selected variables based on the common index
     data_new[y] = pd.merge(tracker, data_new[y], left_index=True, right_index=True, how="right")
 
-
+#%%
 # Check that no observations were lost during the merging process
 nobs_origin = [len(data) for _, data in data.items()]
 nobs_final  = [len(data) for _, data in data_new.items()]
@@ -103,7 +103,7 @@ assert(nobs_origin == nobs_final)
 # Merge all the DataFrames in 'data_new' together, using how="outer" to keep the maximum information
 merged_df = list(data_new.values())[0]
 for _, df in list(data_new.items())[1:]:
-    merged_df = pd.merge(merged_df, df, left_index=True, right_index=True, how="outer")
+    merged_df = pd.merge(merged_df, df, left_index=True, right_index=True, how="inner")
 
 # Create the 3D tensor
 myarray = np.array(np.split(merged_df.values, 9, axis=1)).transpose(1,2,0)
@@ -254,4 +254,6 @@ data['recall_delayed'] = myarray[:,variable_location['recall_delayed']][:,np.new
 #  14: recall_delayed
 
 data_final = np.concatenate([arr for arr in data.values()], axis=1)
+
+
 np.save(save_path, data_final)

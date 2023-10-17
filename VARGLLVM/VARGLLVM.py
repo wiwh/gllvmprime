@@ -48,7 +48,7 @@ class VARGLLVM(nn.Module):
     u_{i} ~ N_p(0, I).
     """
     
-    def __init__(self, num_var, num_latent, num_covar, response_types, add_intercepts = True, VAR1_intercept=False, VAR1_slope=False, fixed_first_loading=False, linpred_max = 10):
+    def __init__(self, num_var, num_latent, num_covar, response_types, add_intercepts = True, VAR1_intercept=False, VAR1_slope=False, fixed_first_loading=False, linpred_max = 20, logvar_z1=None):
         super().__init__()
         self.response_types =  response_types
         self.response_link = {
@@ -75,8 +75,12 @@ class VARGLLVM(nn.Module):
         # Define Parameters
         # -----------------
         # Parameters for the VAR
+        if logvar_z1 is None:
+            self.logvar_z1 = nn.Parameter(torch.zeros((num_latent,)))
+        else:
+            self.logvar_z1 = logvar_z1
+            
         self.A = nn.Parameter(torch.zeros((num_latent, num_latent)))
-        self.logvar_z1 = nn.Parameter(torch.zeros((num_latent,)))
         if VAR1_intercept:
             self.VAR1_intercept = nn.Parameter(torch.zeros(num_latent))
         else:

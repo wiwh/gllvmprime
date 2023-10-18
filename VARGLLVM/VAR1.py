@@ -29,15 +29,10 @@ class VAR1(nn.Module):
           warnings.warn("||A||_2 >= 1: VAR is potentially nonstationary.")
         
         # Intercept
-        if beta_0 is None:
-            self.beta_0 = torch.zeros(A.shape[0])  # no grad required
-        else:
-            self.beta_0 = beta_0
-        # Slope
-        if beta_1 is None:
-            self.beta_1 = torch.zeros(A.shape[0])  # no grad required
-        else:
-            self.beta_1 = beta_1
+        self.beta_0 = beta_0
+        # slope
+        self.beta_1 = beta_1
+
         self.dim = A.shape[0]
         self.A = A
         self.logvar_z1 = logvar_z1
@@ -60,8 +55,9 @@ class VAR1(nn.Module):
         # Initialize a tensor to hold the generated sequence.
         z = torch.zeros_like(epsilon)
         
+  
         # Initialize the first period. Note: unsqueeze(0) allows broadcasting across batches.
-        z[:, 0, :] = epsilon[:, 0, :] * torch.sqrt(torch.exp(self.logvar_z1)).unsqueeze(0) + self.beta_0
+        z[:, 0, :] = epsilon[:, 0, :] * torch.sqrt(torch.exp(self.logvar_z1)).unsqueeze(0)
         
         # Loop over time to apply the VAR1 process.
         for i in range(1, epsilon.shape[1]):
@@ -88,7 +84,7 @@ class VAR1(nn.Module):
         epsilon = torch.zeros_like(z)
         
         # For the first period, z_0 = epsilon_0 * sqrt(exp(logvar_z1))
-        epsilon[:, 0, :] = (z[:, 0, :] - self.beta_0) / torch.sqrt(torch.exp(self.logvar_z1)).unsqueeze(0)
+        epsilon[:, 0, :] = (z[:, 0, :]) / torch.sqrt(torch.exp(self.logvar_z1)).unsqueeze(0)
         
         # Loop over time to compute the shocks epsilon.
         for i in range(1, z.shape[1]):

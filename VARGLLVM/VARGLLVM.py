@@ -78,17 +78,20 @@ class VARGLLVM(nn.Module):
         if logvar_z1 is None:
             self.logvar_z1 = nn.Parameter(torch.zeros((num_latent,)))
         else:
-            self.logvar_z1 = logvar_z1
+            self.logvar_z1 = nn.Parameter(logvar_z1)
+            self.logvar_z1.requires_grad = False
             
         self.A = nn.Parameter(torch.zeros((num_latent, num_latent)))
         if VAR1_intercept:
             self.VAR1_intercept = nn.Parameter(torch.zeros(num_latent))
         else:
-            self.VAR1_intercept = None
+            self.VAR1_intercept = nn.Parameter(torch.zeros(num_latent))
+            self.VAR1_intercept.requires_grad = False
         if VAR1_slope:
             self.VAR1_slope = nn.Parameter(torch.zeros(num_latent))
         else:
-            self.VAR1_slope = None
+            self.VAR1_slope = nn.Parameter(torch.zeros(num_latent))
+            self.VAR1_slope.requires_grad = False
 
         # Parameters for the outcome model
         if add_intercepts:
@@ -133,10 +136,10 @@ class VARGLLVM(nn.Module):
         """
         assert epsilon.shape[2] == self.num_latent, "bad shape for epsilon"
         assert u.shape[1:] == (1, self.num_var), "bad shape for u"
-
+        device = next(self.parameters()).device 
         # Computing linpar
         # ----------------
-        linpar = torch.zeros((epsilon.shape[0], epsilon.shape[1], self.num_var))
+        linpar = torch.zeros((epsilon.shape[0], epsilon.shape[1], self.num_var)).to(device)
 
         # add intercepts, one per variable
         if self.intercepts is not None:
@@ -175,10 +178,12 @@ class VARGLLVM(nn.Module):
             - u: the shocks for the random effects of shape (batch_size, 1, num_var). If None, those are drawn iid from N(0, 1).
 
         """
+        device = next(self.parameters()).device
+
         if epsilon is None:
-            epsilon = torch.randn((batch_size, seq_length, self.num_latent))
+            epsilon = torch.randn((batch_size, seq_length, self.num_latent)).to(device)
         if u is None:
-            u = torch.randn((batch_size, 1, self.num_var)) # one per var, but constant across time
+            u = torch.randn((batch_size, 1, self.num_var)).to(device) # one per var, but constant across time
         
         linpar, condmean = self(epsilon, u, x)
         y = self.sample_response(condmean)
@@ -298,6 +303,8 @@ class Encoder(nn.Module):
         for param in VARGLLVM_model.parameters():
             param.requires_grad = False
         
+
+
         # Forward pass
         # ------------
         if self.transform:
@@ -376,6 +383,7 @@ def train_encoder(encoder, VARGLLVM_model, criterion, optimizer, num_epochs=100,
     """
     encoder.train()
     VARGLLVM_model.eval()
+
 
     if data is not None and sample:
         print("Sample is True: supplied 'data' is ignored.")

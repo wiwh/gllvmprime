@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.324">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Prime Estimator for Factor Analysis: a Minimal (Unoptimized) Example</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="FFA_simple_unoptimized_example_files/libs/clipboard/clipboard.min.js"></script>
+<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/quarto.js"></script>
+<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/popper.min.js"></script>
+<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/anchor.min.js"></script>
+<link href="FFA_simple_unoptimized_example_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="FFA_simple_unoptimized_example_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Prime Estimator for Factor Analysis: a Minimal (Unoptimized) Example</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>Consider the factor analysis (FA) model <span class="math inline">\(F_\theta\)</span> parameterized by <span class="math inline">\(\theta = (\phi, \Lambda)\)</span> and given by:</p>
+<p><span class="math display">\[
+Y|Z \sim N(\Lambda Z, \phi)\\
+\]</span> <span class="math display">\[
+Z \sim N(0, I)
+\]</span> with <span class="math inline">\(\phi\)</span> diagonal.</p>
+<p>The marginal distribution of <span class="math inline">\(Y\)</span> is thus</p>
+<p><span class="math display">\[
+Y \sim N(0, \Sigma)
+\]</span> where <span class="math inline">\(\Sigma = \Lambda\Lambda^\top + \phi\)</span></p>
+<p>Given data <span class="math inline">\(\{Y_i\}_{i=1}^n\)</span> from <span class="math inline">\(F_{\theta}\)</span>, our goal is to estimate <span class="math inline">\(\theta_0\)</span>.</p>
+<section id="the-prime-estimator" class="level2">
+<h2 class="anchored" data-anchor-id="the-prime-estimator">The prime estimator:</h2>
+<p>If <span class="math inline">\(Z_i\)</span> were known, our estimator for <span class="math inline">\(\Lambda\)</span> would be obtained by maximizing the (conditional) log-likelihood, with first-order conditions being given as</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n (Y_i - \Lambda Z_i)Z_i^\top = 0
+\]</span> We can re-write the above equation as:</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iZ_i^\top - \frac{1}{n}\sum_{i=1}^n\Lambda Z_iZ_i^\top = 0
+\]</span></p>
+<p>which is</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iZ_i^\top - \frac{1}{n}\sum_{i=1}^n\mathbb E_{Y|Z}\left[Y_iZ_i^\top|Z_i\right] = 0.
+\]</span></p>
+<p>Since <span class="math inline">\(Z_i\)</span> are not observed we propose to replace them with an estimate <span class="math inline">\(Z_i^\ast\)</span>. This estimate will be a function of <span class="math inline">\(Y_i\)</span> and <span class="math inline">\(\theta\)</span>, and so we write <span class="math inline">\(Z_i^\ast = z(Y_i, \theta)\)</span>. The above equation thus becomes</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}[Y_iz(Y_i, \theta)^\top|Z_i] = 0.
+\]</span> We still have one problem: the conditional expectation depends on <span class="math inline">\(Z_i\)</span>, which are not observed. Note however that this equation can be approximated by</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \mathbb E_Z \left[\mathbb E_{Y|Z}[Y_iz(Y_i, \theta)^\top|Z]\right] = 0,
+\]</span> which simplifies into</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \mathbb E_Y\left[Y_iz(Y_i, \theta)^\top\right] = 0,
+\]</span></p>
+<p>which define our Prime estimator. Notice that the expectation part can be estimated at the marginal model.</p>
+<ul>
+<li>Compared to the EM algorithm, we do not need to sample from the posterior distribution of <span class="math inline">\(Z_i|Y_i\)</span>. This is the main advantage (apart from potential computational speedups).</li>
+<li>Compared to variational inference, we additionally have a nice asymptotic theory for our estimator.</li>
+</ul>
+<section id="monte-carlo-approximation-of-the-expectation" class="level3">
+<h3 class="anchored" data-anchor-id="monte-carlo-approximation-of-the-expectation">Monte Carlo Approximation of the Expectation</h3>
+<p>In general the expectation does not admit a closed form, but can be estimated by Monte Carlo by simulating <span class="math inline">\(Y_i\)</span> from its marginal distribution. Generate <span class="math inline">\(n'\)</span> random <span class="math inline">\(\{\tilde Z_i\}_ {i=1}^{n'}\)</span> independently from <span class="math inline">\(N(0, I)\)</span>. For simplicity of exposition we will take <span class="math inline">\(n=n'\)</span>. We can approximate the above equation by</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[Y_i z(Y_i, \theta)^\top|\tilde Z_i\right] = 0,
+\]</span></p>
+<ul>
+<li>Note that this differs from the above in that <span class="math inline">\(\tilde Z_i\)</span> is now an observed random variate drawn from <span class="math inline">\(N(0,1)\)</span>.</li>
+<li>Other approximations of this expectation can potentially yield better numerical results (e.g.&nbsp;variance reduction methods, gaussian quadrature…). The above method is chosen for its simplicity, universality and ease of exposition.</li>
+</ul>
+</section>
+</section>
+<section id="equations-for-the-estimate-of-z_i" class="level2">
+<h2 class="anchored" data-anchor-id="equations-for-the-estimate-of-z_i">Equations for the estimate of <span class="math inline">\(Z_i\)</span></h2>
+<p>We still need an estimate for the unobserved <span class="math inline">\(Z_i\)</span>. For simplicity of exposition we take the MAP, the mode of <span class="math inline">\(Z_i|Y_i\)</span>, given for FA by:</p>
+<p><span class="math display">\[
+Z_i^\ast = z(Y_i, \theta) =  \Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1}\phi^{-1}Y_i
+\]</span> Some notes:</p>
+<ul>
+<li>given <span class="math inline">\(Y_i\sim F_\theta\)</span>, <span class="math inline">\(Z_i^\ast\)</span> admits <span class="math inline">\(Z_i^\ast = Z_i + O_p(p^{-1/2})\)</span>: the bigger <span class="math inline">\(p\)</span> is, the closer <span class="math inline">\(Z_i^\ast\)</span> is to <span class="math inline">\(Z_i\)</span>, and thus the closer the estimating equations of the Prime estimator are from those where <span class="math inline">\(Z_i\)</span> are known.</li>
+<li><span class="math inline">\(Z_i\)</span> can be estimated independently from <span class="math inline">\(Z_i'\)</span> for all <span class="math inline">\(i\neq i'\)</span> and thus can easily be paralellized.</li>
+<li>The MAP is not optimized for the FA algorithm: convergence will be relatively slow. We consider it for illustrative purposes only.</li>
+<li>In the FA case, the MAP admits a closed form solution, but we ignore this for now, again to illustrate the stochastic approximation algorithm.</li>
+</ul>
+</section>
+<section id="numerical-implementation" class="level2">
+<h2 class="anchored" data-anchor-id="numerical-implementation">Numerical implementation</h2>
+<section id="data-generator" class="level3">
+<h3 class="anchored" data-anchor-id="data-generator">Data Generator</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate data from the model</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>generator <span class="ot">&lt;-</span> <span class="cf">function</span>(n, Lambda, phi, <span class="at">Z=</span><span class="cn">NULL</span>){</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Lambda)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  q <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Lambda)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if Z is not given, we generate it</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(Z)) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span>q), n, q)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute the linear predictor</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  linpred <span class="ot">&lt;-</span> Z <span class="sc">%*%</span> <span class="fu">t</span>(Lambda)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate noise</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  noise <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span>p), n, p) <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">/</span>phi) <span class="co"># this is a bad implementation but illustrates well</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate observations</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  Y <span class="ot">&lt;-</span> linpred <span class="sc">+</span> noise</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">Y=</span>Y, <span class="at">Z=</span>Z))</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate Z from the data and current estimate of Lambda and phi</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>Z_estimator <span class="ot">&lt;-</span> <span class="cf">function</span>(Y, Lambda, phi) {</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  Z_hat <span class="ot">=</span> Y <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">/</span>phi) <span class="sc">%*%</span> Lambda <span class="sc">%*%</span> <span class="fu">solve</span>(<span class="fu">t</span>(Lambda) <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">/</span>phi) <span class="sc">%*%</span> Lambda) <span class="co"># this is a bad implementation but illustrates well</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(Z_hat)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co"># compute the random gradient</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>random_gradient <span class="ot">&lt;-</span> <span class="cf">function</span>(Y, Lambda, phi) {</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Y)</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Lambda)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  q <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Lambda)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate data from the model at current estimate Lambda and phi. this is used to estimate the expectation</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  data_gen <span class="ot">&lt;-</span> <span class="fu">generator</span>(n, Lambda, phi)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  Y_gen <span class="ot">&lt;-</span> data_gen<span class="sc">$</span>Y</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># for both Y and Y_gen, compute Zhat and Zhat_gen</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  Zhat <span class="ot">&lt;-</span> <span class="fu">Z_estimator</span>(Y, Lambda, phi)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  Zhat_gen <span class="ot">&lt;-</span> <span class="fu">Z_estimator</span>(Y_gen, Lambda, phi)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute the gradient for Lambda</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  gradient <span class="ot">&lt;-</span> (<span class="fu">t</span>(Y) <span class="sc">%*%</span> Zhat <span class="sc">-</span> <span class="fu">t</span>(Y_gen) <span class="sc">%*%</span> Zhat_gen)<span class="sc">/</span>n</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(gradient)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="example-of-stochastic-algorithm" class="level1">
+<h1>Example of Stochastic Algorithm</h1>
+<p>For now assume <span class="math inline">\(\phi\)</span> is known. This can be relaxed later.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dimensional setting</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># True parameters</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>Lambda_0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(p<span class="sc">*</span>q), p, q)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>phi_0 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>, p)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># True data</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>data_0 <span class="ot">&lt;-</span> <span class="fu">generator</span>(n, Lambda_0, phi_0)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>Y_0 <span class="ot">&lt;-</span> data_0<span class="sc">$</span>Y</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>SY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y_0) <span class="sc">%*%</span> Y_0 <span class="sc">/</span> n</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize model parameters</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>Lambda <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(p<span class="sc">*</span>q), p, q) <span class="co"># random initalization...</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>phi <span class="ot">&lt;-</span> phi_0 <span class="co"># assumed known</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a convergence criterion</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>compute_criterion <span class="ot">&lt;-</span> <span class="cf">function</span>(SY, Lambda, phi) {</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># We take the Frobenius' norm of the difference between the observed covariance against its expectation</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>((Lambda <span class="sc">%*%</span> <span class="fu">t</span>(Lambda) <span class="sc">+</span> <span class="fu">diag</span>(phi) <span class="sc">-</span> SY)<span class="sc">^</span><span class="dv">2</span>) <span class="co"># This is computationally bad and should never be computed in production.</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Stochastic approximation Algorithm</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>num_iterations <span class="ot">=</span> <span class="dv">100</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>Lambda_hist <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow=</span>num_iterations, <span class="at">ncol=</span>p<span class="sc">*</span>q) <span class="co"># storing the values of Lambda at each iteration.</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>criterion_hist <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, num_iterations)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_iterations) {</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  gradient <span class="ot">&lt;-</span> <span class="fu">random_gradient</span>(data_0<span class="sc">$</span>Y, Lambda, phi)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  Lambda <span class="ot">&lt;-</span> Lambda <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(i) <span class="sc">*</span> gradient  <span class="co"># notice the diminishing step size</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute the criterion</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  criterion <span class="ot">&lt;-</span> <span class="fu">compute_criterion</span>(SY, Lambda, phi)</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Store the iteration results</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  Lambda_hist[i,] <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(Lambda)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  criterion_hist[i] <span class="ot">&lt;-</span> criterion</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># plotting the results</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(criterion_hist, <span class="at">main=</span><span class="st">"Criterion convergence"</span>)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="fu">ts.plot</span>(Lambda_hist, <span class="at">main=</span><span class="st">"Lambda convergence"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="FFA_simple_unoptimized_example_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="plotting-estimated-loadings-against-their-true-value" class="level2">
+<h2 class="anchored" data-anchor-id="plotting-estimated-loadings-against-their-true-value">Plotting estimated loadings against their true value</h2>
+<p>To plot the estimated of loadings against its true value, we need to rotate them so that they’re as close as possible. This can be done using a Procrustes rotation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych) <span class="co"># make sure to install it first</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>rotate_and_plot_loadings <span class="ot">&lt;-</span> <span class="cf">function</span>(Lambda, Lambda_target) {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  Lambda_rotated <span class="ot">&lt;-</span> psych<span class="sc">::</span><span class="fu">Procrustes</span>(Lambda, Lambda_target)<span class="sc">$</span>loadings</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(Lambda_target, Lambda_rotated, <span class="at">main=</span><span class="st">"Rotated Loadings vs Target Loadings"</span>, <span class="at">xlab=</span><span class="st">"Target loadings"</span>, <span class="at">ylab=</span><span class="st">"Rotated loadings"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">rotate_and_plot_loadings</span>(Lambda, Lambda_0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="FFA_simple_unoptimized_example_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="fa-simplifications-and-relationship-with-mle" class="level2">
+<h2 class="anchored" data-anchor-id="fa-simplifications-and-relationship-with-mle">FA: Simplifications and Relationship with MLE</h2>
+<p>Substituting <span class="math inline">\(Z_i^\ast\)</span> for <span class="math inline">\(Z_i\)</span> yields</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iY_i^\top \phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1} - \mathbb E_Y\left[Y_iY_i^\top\phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1}\right] =0
+\]</span> In FA, this expectation admits an analytical expression, using <span class="math inline">\(E_Y[Y_iY_i^\top ] = \Sigma\)</span>, but for the sake of</p>
+<p>Given the marginal model, we have</p>
+<p><span class="math display">\[
+S_{Y_i} \phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1} - \Sigma\phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1} =0
+\]</span> where <span class="math inline">\(S_{Y_i} = \frac{1}{n}\sum_{i=1}^n Y_iY_i^\top\)</span>. This yields</p>
+<p><span class="math display">\[
+(S_{Y_i}- \Sigma) \phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1}=0
+\]</span> which is solved when <span class="math inline">\((S_{Y_i}- \Sigma)\)</span>, which coincide with the MLE of factor analysis.</p>
+<p>Thus, it turns out that sampling is unnecessary in our case. What’s more, it is possible to tremendously speed up the computations using a small trick. Left for the future.</p>
+</section>
+<section id="estimating-phi" class="level2">
+<h2 class="anchored" data-anchor-id="estimating-phi">Estimating <span class="math inline">\(\phi\)</span></h2>
+<p>It turns out that our estimator is consistent for all values of <span class="math inline">\(\phi\in\mathbb R_+\)</span>. Efficiency gains can however be obtained by estimating <span class="math inline">\(\phi\)</span> appropriately. We can iteratively estimate <span class="math inline">\(\phi\)</span> as:</p>
+<p><span class="math display">\[
+\phi = SY- \Lambda\Lambda^\top
+\]</span></p>
+<p>so that this coincides with the MLE of FA. At the solution, we thus have the MLE (which is the most efficient).</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.324">
+<meta name="generator" content="quarto-1.3.450">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -57,16 +57,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="FFA_simple_unoptimized_example_files/libs/clipboard/clipboard.min.js"></script>
-<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/quarto.js"></script>
-<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/popper.min.js"></script>
-<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="FFA_simple_unoptimized_example_files/libs/quarto-html/anchor.min.js"></script>
-<link href="FFA_simple_unoptimized_example_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="FFA_simple_unoptimized_example_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="FFA_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="gllvm_simple_unoptimized_example_files/libs/clipboard/clipboard.min.js"></script>
+<script src="gllvm_simple_unoptimized_example_files/libs/quarto-html/quarto.js"></script>
+<script src="gllvm_simple_unoptimized_example_files/libs/quarto-html/popper.min.js"></script>
+<script src="gllvm_simple_unoptimized_example_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="gllvm_simple_unoptimized_example_files/libs/quarto-html/anchor.min.js"></script>
+<link href="gllvm_simple_unoptimized_example_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="gllvm_simple_unoptimized_example_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="gllvm_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="gllvm_simple_unoptimized_example_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="gllvm_simple_unoptimized_example_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -267,7 +267,7 @@ Z_i^\ast = z(Y_i, \theta) =  \Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1}\phi
 <span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(criterion_hist, <span class="at">main=</span><span class="st">"Criterion convergence"</span>)</span>
 <span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="fu">ts.plot</span>(Lambda_hist, <span class="at">main=</span><span class="st">"Lambda convergence"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="FFA_simple_unoptimized_example_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+<p><img src="gllvm_simple_unoptimized_example_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
 </div>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -285,7 +285,7 @@ Z_i^\ast = z(Y_i, \theta) =  \Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1}\phi
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">rotate_and_plot_loadings</span>(Lambda, Lambda_0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="FFA_simple_unoptimized_example_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+<p><img src="gllvm_simple_unoptimized_example_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 </section>
@@ -312,6 +312,140 @@ S_{Y_i} \phi^{-1}\Lambda(\Lambda^\top \phi^{-1}\Lambda + I)^{-1} - \Sigma\phi^{-
 \]</span></p>
 <p>so that this coincides with the MLE of FA. At the solution, we thus have the MLE (which is the most efficient).</p>
 </section>
+</section>
+<section id="estimating-a-mixture-of-gaussian-and-binary-random-variable" class="level1">
+<h1>Estimating a Mixture of Gaussian and Binary Random Variable</h1>
+<p>Consider a GLLVM with mixture of gaussian (known <span class="math inline">\(\phi\)</span>) and Bernoulli random variables. Note that our gradient remains the same:</p>
+<p><span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[Y_i z(Y_i, \theta)^\top|\tilde Z_i\right].
+\]</span> The only thing that changes is potentially the definition of <span class="math inline">\(z(\theta, Y_i)\)</span>. While an implementation of the MAP of <span class="math inline">\(Z_i|Y_i\)</span> would certainly be beneficial, we show here that our estimator works well even if <span class="math inline">\(Z_i\)</span> is estimated with bias: we keep it the same as before, i.e.&nbsp;we ignore that . In an implementation for production, we would not ignore it. Our estimator remains consistent (provided it exists) even with a biased estimate of <span class="math inline">\(Z\)</span>. The only change necessary is thus the generator function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate data from the model</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>generator_mixture <span class="ot">&lt;-</span> <span class="cf">function</span>(n, Lambda, phi, gaussian_idx, bernoulli_idx, <span class="at">Z=</span><span class="cn">NULL</span>){</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Lambda)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  q <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Lambda)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if Z is not given, we generate it</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(Z)) {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span>q), n, q)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute the linear predictor</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  linpred <span class="ot">&lt;-</span> Z <span class="sc">%*%</span> <span class="fu">t</span>(Lambda)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  means <span class="ot">&lt;-</span> linpred</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate noise: will be used for the gaussian random variables</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  noise <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span>p), n, p) <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">/</span>phi) <span class="co"># this is a bad implementation but illustrates well</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute the mean of the Bernoulli using the logistic function</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  means[,bernoulli_idx] <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span>(<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>linpred[,bernoulli_idx]))</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Placeholder for the responses</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  Y <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow=</span>n, <span class="at">ncol=</span>p)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generate all gaussian:</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  Y[,gaussian_idx] <span class="ot">&lt;-</span> linpred[,gaussian_idx] <span class="sc">+</span> noise[,gaussian_idx]</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generate all Bernoulli</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  Y[,bernoulli_idx] <span class="ot">&lt;-</span> <span class="fu">apply</span>(means[,bernoulli_idx], <span class="dv">2</span>, <span class="cf">function</span>(prob) <span class="fu">rbinom</span>(n, <span class="dv">1</span>, prob))</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate observations</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">Y=</span>Y, <span class="at">Z=</span>Z))</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>random_gradient_mixture <span class="ot">&lt;-</span> <span class="cf">function</span>(Y, Lambda, phi, gaussian_idx, bernoulli_idx) {</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Y)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Lambda)</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  q <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Lambda)</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate data from the model at current estimate Lambda and phi. this is used to estimate the expectation</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>  data_gen <span class="ot">&lt;-</span> <span class="fu">generator_mixture</span>(n, Lambda, phi, gaussian_idx, bernoulli_idx)</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>  Y_gen <span class="ot">&lt;-</span> data_gen<span class="sc">$</span>Y</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># for both Y and Y_gen, compute Zhat and Zhat_gen</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>  Zhat <span class="ot">&lt;-</span> <span class="fu">Z_estimator</span>(Y, Lambda, phi)</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>  Zhat_gen <span class="ot">&lt;-</span> <span class="fu">Z_estimator</span>(Y_gen, Lambda, phi)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute the gradient for Lambda</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>  gradient <span class="ot">&lt;-</span> (<span class="fu">t</span>(Y) <span class="sc">%*%</span> Zhat <span class="sc">-</span> <span class="fu">t</span>(Y_gen) <span class="sc">%*%</span> Zhat_gen)<span class="sc">/</span>n</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(gradient)</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dimensional setting</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>gaussian_idx <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>bernoulli_idx <span class="ot">&lt;-</span> <span class="dv">4</span><span class="sc">:</span><span class="dv">5</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># True parameters</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>Lambda_0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(p<span class="sc">*</span>q), p, q)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>phi_0 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>, p)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># True data</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>data_0 <span class="ot">&lt;-</span> <span class="fu">generator_mixture</span>(n, Lambda_0, phi_0, gaussian_idx, bernoulli_idx)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>Y_0 <span class="ot">&lt;-</span> data_0<span class="sc">$</span>Y</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>SY <span class="ot">&lt;-</span> <span class="fu">t</span>(Y_0) <span class="sc">%*%</span> Y_0 <span class="sc">/</span> n</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize model parameters</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>Lambda <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(p<span class="sc">*</span>q), p, q) <span class="co"># random initalization...</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>phi <span class="ot">&lt;-</span> phi_0 <span class="co"># assumed known</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a convergence criterion</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>compute_criterion <span class="ot">&lt;-</span> <span class="cf">function</span>(SY, Lambda, phi) {</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># We take the Frobenius' norm of the difference between the observed covariance against its expectation</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>((Lambda <span class="sc">%*%</span> <span class="fu">t</span>(Lambda) <span class="sc">+</span> <span class="fu">diag</span>(phi) <span class="sc">-</span> SY)<span class="sc">^</span><span class="dv">2</span>) <span class="co"># This is computationally bad and should never be computed in production.</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Stochastic approximation Algorithm</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>num_iterations <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>Lambda_hist <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow=</span>num_iterations, <span class="at">ncol=</span>p<span class="sc">*</span>q) <span class="co"># storing the values of Lambda at each iteration.</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>criterion_hist <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, num_iterations)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_iterations) {</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  gradient <span class="ot">&lt;-</span> <span class="fu">random_gradient_mixture</span>(data_0<span class="sc">$</span>Y, Lambda, phi, gaussian_idx, bernoulli_idx)</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  Lambda <span class="ot">&lt;-</span> Lambda <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(i) <span class="sc">*</span> gradient  <span class="co"># notice the diminishing step size</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute the criterion</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  criterion <span class="ot">&lt;-</span> <span class="fu">compute_criterion</span>(SY, Lambda, phi)</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Store the iteration results</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  Lambda_hist[i,] <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(Lambda)</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  criterion_hist[i] <span class="ot">&lt;-</span> criterion</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co"># plotting the results</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(criterion_hist, <span class="at">main=</span><span class="st">"Criterion convergence"</span>)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="fu">ts.plot</span>(Lambda_hist, <span class="at">main=</span><span class="st">"Lambda convergence"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="gllvm_simple_unoptimized_example_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rotate_and_plot_loadings</span>(Lambda, Lambda_0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="gllvm_simple_unoptimized_example_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Some notes (c.f. 2nd chapter of my thesis)</p>
+<ul>
+<li>More iterations are necessary because of lack of scaling and not optimal <span class="math inline">\(Z_i^\ast\)</span>.</li>
+<li>The function <span class="math inline">\(z(\bt, Y)\)</span> should be better, for instance the MAP. The implementation is then harder and less appropriate for a simple demonstration, but the idea is the same.</li>
+<li>We haven’t even centered the Bernoulli random variable.</li>
+<li>The criterion for convergence for the mixture is not optimal: the deviance is more appropriate.</li>
+<li>The gradient should include second-order information to speed up convergence (using an approximation of the Hessian)</li>
+<li><em>However</em>, instead of scaling the gradient up using the hessian, we can transform the variables with a transformation <span class="math inline">\(h:\mathbb R^p \to \mathbb R^p\)</span>: <span class="math display">\[
+\frac{1}{n}\sum_{i=1}^n h(Y_i)z(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[h(Y_i) z(Y_i, \theta)^\top|\tilde Z_i\right] = 0,
+\]</span> which is the implementation of the estimator that has the most merits for applications (because indeed, we do not want to use the hessian).</li>
+</ul>
 </section>
 
 </main>

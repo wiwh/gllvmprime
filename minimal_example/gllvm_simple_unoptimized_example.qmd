@@ -241,16 +241,13 @@ $$
 
 so that this coincides with the MLE of FA. At the solution, we thus have the MLE (which is the most efficient).
 
-
 # Estimating a Mixture of Gaussian and Binary Random Variable
 
 Consider a GLLVM with mixture of gaussian (known $\phi$) and Bernoulli random variables. Note that our gradient remains the same:
 
 $$
 \frac{1}{n}\sum_{i=1}^n Y_iz(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[Y_i z(Y_i, \theta)^\top|\tilde Z_i\right].
-$$
-The only thing that changes is potentially the definition of $z(\theta, Y_i)$. While an implementation of the MAP of $Z_i|Y_i$ would certainly be beneficial, we show here that our estimator works well even if $Z_i$ is estimated with bias: we keep it the same as before, i.e. we ignore that . In an implementation for production, we would not ignore it. Our estimator remains consistent (provided it exists) even with a biased estimate of $Z$. The only change necessary is thus the generator function:
-
+$$ The only thing that changes is potentially the definition of $z(\theta, Y_i)$. While an implementation of the MAP of $Z_i|Y_i$ would certainly be beneficial, we show here that our estimator works well even if $Z_i$ is estimated with bias: we keep it the same as before, i.e. we ignore that . In an implementation for production, we would not ignore it. Our estimator remains consistent (provided it exists) even with a biased estimate of $Z$. The only change necessary is thus the generator function:
 
 ```{r}
 
@@ -308,7 +305,6 @@ random_gradient_mixture <- function(Y, Lambda, phi, gaussian_idx, bernoulli_idx)
   return(gradient)
 }
 ```
-
 
 ```{r}
 
@@ -368,20 +364,13 @@ par(mfrow=c(1,1))
 rotate_and_plot_loadings(Lambda, Lambda_0)
 ```
 
-
 Some notes (c.f. 2nd chapter of my thesis)
 
-* More iterations are necessary because of lack of scaling and not optimal $Z_i^\ast$.
-* The function $z(\bt, Y)$ should be better, for instance the MAP. The implementation is then harder and less appropriate for a simple demonstration, but the idea is the same.
-* We haven't even centered the Bernoulli random variable.
-* The criterion for convergence for the mixture is not optimal: the deviance is more appropriate.
-* The gradient should include second-order information to speed up convergence (using an approximation of the Hessian)
-* *However*, instead of scaling the gradient up using the hessian, we can transform the variables with a transformation $h:\mathbb R^p \to \mathbb R^p$:
-$$
-\frac{1}{n}\sum_{i=1}^n h(Y_i)z(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[h(Y_i) z(Y_i, \theta)^\top|\tilde Z_i\right] = 0,
-$$
-which is the implementation of the estimator that has the most merits for applications (because indeed, we do not want to use the hessian). 
-
-
-
-
+-   More iterations are necessary because of lack of scaling and not optimal $Z_i^\ast$.
+-   The function $z(\bt, Y)$ should be better, for instance the MAP. The implementation is then harder and less appropriate for a simple demonstration, but the idea is the same.
+-   We haven't even centered the Bernoulli random variable.
+-   The criterion for convergence for the mixture is not optimal: the deviance is more appropriate.
+-   The gradient should include second-order information to speed up convergence (using an approximation of the Hessian)
+-   *However*, instead of scaling the gradient up using the hessian, we can transform the variables with a transformation $h:\mathbb R^p \to \mathbb R^p$: $$
+    \frac{1}{n}\sum_{i=1}^n h(Y_i)z(Y_i, \theta)^\top - \frac{1}{n}\sum_{i=1}^n \mathbb E_{Y|Z}\left[h(Y_i) z(Y_i, \theta)^\top|\tilde Z_i\right] = 0,
+    $$ which is the implementation of the estimator that has the most merits for applications (because indeed, we do not want to use the hessian).

@@ -5,38 +5,113 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, TensorDataset
+from dataclasses import dataclass, field
+from typing import List, Dict, Callable
 
-
+@dataclass
+class GLLVMSettings:
+    p: int  # num_var
+    q: int  # num_latent
+    k: int  # num_covar
+    T: int  # num_period
+    response_types: Dict[str, List[int]]
+    response_args: Dict[str, List] = field(default_factory=lambda: {
+        'binomial': [1]
+    })
+    intercept: bool = True
+    response_link: Dict[str, Callable] = field(default_factory=lambda: {
+        'gaussian': lambda x: x,
+        'binomial': torch.logit,
+        'ordinal': torch.logit,
+        'poisson': torch.log
+    })
+    response_linkinv: Dict[str, Callable] = field(default_factory=lambda: {
+        'gaussian': lambda x: x,
+        'binomial': lambda x: 1 / (1 + torch.exp(-x)),
+        'ordinal': lambda x: 1 / (1 + torch.exp(-x)),
+        'poisson': torch.exp
+    })
+    response_transform: Dict[str, Callable] = field(default_factory=lambda: {
+        'gaussian': lambda x: x,
+        'binomial': lambda x: 2 * x - 1,
+        'ordinal': lambda x: 2 * x - 1,
+        'poisson': torch.log1p
+    })
+    
+    
 class LongitudinalGLLVM(nn.Module):
-    def __init__(self, num_var, num_latent, num_covar, num_period, response_types, intercept=True):
-        super().__init__()
-        self.setting = {
-            "p":num_var, 
-            "q":num_latent, 
-            "k":num_covar, 
-            "T":num_period,
-            'response_types': response_types,
-            'response_link': 
-                {
-                'binary' : lambda x: torch.logit(x),
-                'ordinal': lambda x: torch.logit(x),
-                'counts': lambda x: torch.log(x)
-                },
-            'response_linkinv':
-                {
-                'binary': lambda x: 1/(1+torch.exp(-x)),
-                'ordinal': lambda x: 1/(1+torch.exp(-x)),
-                'counts': lambda x: torch.exp(x)
-                },
-            'response_transform':
-                {
-                'binary' : lambda x: 2*x - 1,
-                'ordinal': lambda x: 2*x - 1,
-                'counts': lambda x: torch.log(x+1)
-                },
-            "intercept": intercept
+    """
+    Longitudinal Generalized Latent Variable Model (GLLVM).
+
+    This model is designed to handle longitudinal data with mixed response types 
+    (binomial, ordinal, and poisson) using latent variables and covariates over multiple periods.
+    The convention for the indicies of the tensor is: (num_batch, seq_length, num_features)
+
+    Args:
+        num_var (int): Number of observed variables (responses).
+        num_latent (int): Number of latent variables.
+        num_covar (int): Number of covariates.
+        num_period (int): Number of periods in the longitudinal data.
+        response_types (dict): A dictionary specifying the type of each response variable. 
+                               Keys are response types ('binomial', 'ordinal', 'poisson') and values are lists of variable indices.
+        intercept (bool, optional): Whether to include an intercept in the model. Default is True.
+
+    Attributes:
+        setting (dict): Dictionary containing model settings and configurations.
+        encoder (Encoder): Encoder part of the model to infer latent variables.
+        decoder (Decoder): Decoder part of the model to reconstruct observed variables from latent variables.
+        sample (Sample): Sampling part of the model for generating synthetic data.
+        optimizer (torch.optim.Adam): Optimizer for training the model.
+        scheduler (StepLR): Learning rate scheduler for the optimizer.
+
+    Methods:
+        plot_cov(what="linpar", x=None):
+            Plots the covariance matrix of specified model outputs.
+        
+        set_learning_rates(lr_model=None, lr_encoder=None):
+            Sets the learning rates for the model and encoder.
+
+        transform_responses(y):
+            Transforms the responses according to their specified types.
+        
+        fit(x, y, mask, epochs, lr_model=None, lr_encoder=None, phi_lb=-1, phi_ub=1, varu_lb=0.1, varu_ub=2):
+            Fits the model to the given data.
+
+        impute(x, y, mask, nsteps=10):
+            Imputes missing values in the response variables.
+
+        mean_impute(y, mask):
+            Imputes missing values using the mean of observed values.
+
+        compute_autocorr(z):
+            Computes the autocorrelation of latent variables.
+
+    Example:
+        # Define response types
+        response_types = {
+            'binomial': [0, 1],
+            'ordinal': [2],
+            'poisson': [3, 4]
         }
 
+        # Initialize the model
+        model = LongitudinalGLLVM(
+            num_var=5, 
+            num_latent=2, 
+            num_covar=3, 
+            num_period=10, 
+            response_types=response_types
+        )
+
+        # Fit the model
+        x = torch.randn(100, 10, 3)  # Covariates
+        y = torch.randn(100, 10, 5)  # Responses
+        mask = torch.zeros_like(y, dtype=torch.bool)  # Mask for missing data
+        model.fit(x, y, mask, epochs=100)
+    """
+    def __init__(self, num_var, num_latent, num_covar, num_period, response_types, response_args=None, intercept=True):
+        super().__init__()
+        self.setting = GLLVMSettings(p=num_var, q=num_latent, k=num_covar, T=num_period, response_types=response_types, response_args=response_args, intercept=intercept)
         self.encoder = Encoder(self.setting)
         self.decoder = Decoder(self.setting)
         self.sample = Sample(self.decoder, self.setting)
@@ -142,8 +217,6 @@ class LongitudinalGLLVM(nn.Module):
                 self.sample.var_u.data = torch.clamp(self.sample.var_u.data, varu_lb, varu_ub)
 
                 print(f'var_u: {self.sample.var_u}, phi: {self.sample.phi}')
-            
-
 
             with torch.no_grad():   
                 fit = mseLoss(y_masked, mean_sample, mask)
@@ -200,23 +273,23 @@ class Sample(nn.Module):
         super().__init__()
         self.decoder = decoder
         self.setting = setting
-        self.phi = nn.Parameter(torch.ones(1) * .8)#.detach() # we do not update it using backprop, but still define as a nn.Parameter to easily change between devices using nn.Module.to()
-        self.var_u = nn.Parameter(torch.ones(1) * 1.0)#.detach()
+        self.log_scale = nn.Parameter(torch.zeros((1,1,setting.p)))
+        self.log_uvar  = nn.Parameter(torch.zeros((1)))
     
     def forward(self, x, n=None):
-        device = self.phi.device
+        device = self.log_scale.device
         with torch.no_grad():
             if x is None:
                 Warning("x was set to None for sampling. X is usually fixed. Are you sure you want to sample x?")
-                x = torch.randn((n, self.setting['T'], self.setting['k']-1)).to(device)
+                x = torch.randn((n, self.setting.T, self.setting.k)).to(device)
                 # Add intercepts and time information
-                time_data = torch.from_numpy(np.linspace(0,4,self.setting['T'])).float().expand(x.shape[0], -1).unsqueeze(2).to(device)
-                x = torch.cat([x, time_data], dim=2)
+                # time_data = torch.from_numpy(np.linspace(0,4,self.setting.T)).float().expand(x.shape[0], -1).unsqueeze(2).to(device)
+                # x = torch.cat([x, time_data], dim=2)
             
             n = x.shape[0]
 
-            u = torch.randn((n, 1, self.setting['p'])).to(device) * torch.sqrt(self.var_u)
-            d = torch.randn((n, self.setting['T'], self.setting['q'])).to(device)
+            u = torch.randn((n, 1, self.setting.p)).to(device) * torch.sqrt(torch.exp(self.log_uvar))
+            d = torch.randn((n, self.setting.T, self.setting.q)).to(device)
             z = self.AR(d)
 
             linpar, mean = self.decoder(x, z, u) # decoder gives the expectation
@@ -226,23 +299,26 @@ class Sample(nn.Module):
             return {"x":x, "y":y, "z":z, "u":u, "linpar":linpar, "mean":mean}
 
     def sample_response(self, mean):
-        device = self.phi.device
+        device = self.log_scale.device
         y = torch.zeros_like(mean).to(device)
-        for response_type, response_id in self.setting['response_types'].items():
-            if response_type == "binary":
-                y[:,:,response_id] = torch.bernoulli(mean[:,:,response_id]).to(device)
+        for response_type, response_id in self.setting.response_types.items():
+            if response_type == "gaussian":
+                y[:,:,response_id] = mean[:,:,response_id] + torch.randn_like(mean[:,:,response_id]) * torch.exp(self.log_scale[:,:,response_id])
+            elif response_type == "binomial":
+                count=torch.tensor(self.setting.response_args['binomial'])
+                binomial = torch.distributions.Binomial(total_count=count, probs=mean[:,:,response_id])
+                y[:,:,response_id] = binomial.sample().to(device)
             elif response_type == "ordinal":
                 cum_probs = mean[:,:,response_id]
-                # draw one uniform for the whole vector
                 random = torch.rand((*cum_probs.shape[0:2], 1)).to(device)
-                # compare with the cumulative probabilities
                 ordinal = torch.sum(random > cum_probs, dim=2)
                 ordinal = torch.nn.functional.one_hot(ordinal).squeeze().float()
-                ordinal = ordinal[:,:,1:] # discard the first column of the one_hot encoding, as it is superfluous (as a 0)
+                ordinal = ordinal[:,:,1:]
                 y[:,:,response_id] = ordinal
-            elif response_type == "counts":
+            elif response_type == "poisson":
                 y[:,:,response_id] = torch.poisson(mean[:,:,response_id])
         return y
+
 
     def AR(self, d):
         z = d.clone()
@@ -258,18 +334,18 @@ class Decoder(nn.Module):
         super().__init__()
         self.setting = setting
         # decoder part (our parameters of interest)
-        self.wz = nn.Parameter(torch.randn((self.setting['q'], self.setting['p'])) * 1.2)
-        self.wx = nn.Parameter(torch.randn((1, self.setting['k'], self.setting['p']))* .2) # Measurement invariance!
-        self.bias = nn.Parameter(torch.zeros((1, 1, self.setting['p']))* .2) # Measurement invariance!
+        self.wz = nn.Parameter(torch.randn((self.setting.q, self.setting.p)) * 1.2)
+        self.wx = nn.Parameter(torch.randn((1, self.setting.k, self.setting.p))* .2) # Measurement invariance!
+        self.bias = nn.Parameter(torch.zeros((1, 1, self.setting.p))) # Measurement invariance!
 
     # decoding (computing the conditional mean)
     def forward(self, x, z, u):
 
-        xwx = (x.unsqueeze(2) @ self.wx).squeeze() # see section "details of tensorproducts"
+        xwx = (x.unsqueeze(2) @ self.wx).squeeze() # see section "details of tensorproducts" # problem to squeeze if T=1
         zwz = (z.unsqueeze(2) @ self.wz).squeeze()
         # for the ordinal variables:
 
-        if self.setting['intercept']:
+        if self.setting.intercept:
             linpar = self.bias + xwx + zwz + u 
         else:
             linpar = xwx + zwz + u 
@@ -277,8 +353,8 @@ class Decoder(nn.Module):
 
         # Apply the inverse link to get the conditional expectation
         mean  = torch.zeros_like(linpar)
-        for response_type, response_id in self.setting['response_types'].items():
-            mean[:,:,response_id] = self.setting['response_linkinv'][response_type](linpar[:,:,response_id])
+        for response_type, response_id in self.setting.response_types.items():
+            mean[:,:,response_id] = self.setting.response_linkinv[response_type](linpar[:,:,response_id])
         # Transform the 
         return linpar, mean
 
@@ -290,8 +366,8 @@ class Encoder(nn.Module):
         # encoder part
         # input dimension is (p+k) (responses + covariates)
         # output dimension is q+p (one latent )
-        input_size = self.setting['p'] + self.setting['k']
-        hidden_size = (self.setting['p'] + self.setting['q']) * 5
+        input_size = self.setting.p + self.setting.k
+        hidden_size = (self.setting.p + self.setting.q) * 5
         self.rnn = nn.RNN(input_size = input_size, hidden_size = hidden_size, batch_first=True)
         
         self.fc = nn.Sequential(
@@ -306,7 +382,7 @@ class Encoder(nn.Module):
             nn.ReLU(),
             nn.Linear(in_features = hidden_size, out_features = hidden_size),
             nn.ReLU(),
-            nn.Linear(in_features = hidden_size, out_features = self.setting['q']),
+            nn.Linear(in_features = hidden_size, out_features = self.setting.q),
         )
 
         self.fc_U = nn.Sequential(
@@ -314,7 +390,7 @@ class Encoder(nn.Module):
             nn.ReLU(),
             nn.Linear(in_features = hidden_size, out_features = hidden_size),
             nn.ReLU(),
-            nn.Linear(in_features=hidden_size, out_features = self.setting['p'])
+            nn.Linear(in_features=hidden_size, out_features = self.setting.p)
         )
 
         self.optimizer =  torch.optim.Adam(self.parameters(), lr=.01)
@@ -329,8 +405,8 @@ class Encoder(nn.Module):
         if transform_response:
             y_transformed = torch.zeros_like(y)
             with torch.no_grad():
-                for response_type, response_id in self.setting['response_types'].items():
-                    y_transformed[:,:,response_id] = self.setting['response_transform'][response_type](y[:,:,response_id])
+                for response_type, response_id in self.setting.response_types.items():
+                    y_transformed[:,:,response_id] = self.setting.response_transform[response_type](y[:,:,response_id])
         else:
             y_transformed = y
 
@@ -344,8 +420,8 @@ class Encoder(nn.Module):
     def fit(self, x, y, z, u, epochs = 100, verbose = False):
         y = y.clone()
         with torch.no_grad():
-            for response_type, response_id in self.setting['response_types'].items():
-                y[:,:,response_id] = self.setting['response_transform'][response_type](y[:,:,response_id])
+            for response_type, response_id in self.setting.response_types.items():
+                y[:,:,response_id] = self.setting.response_transform[response_type](y[:,:,response_id])
         # Fit the encoder
         for epoch in range(epochs):
             self.optimizer.zero_grad()
@@ -406,9 +482,9 @@ class MELoss(nn.Module):
         y_transformed = torch.zeros_like(y)
         ys_transformed = torch.zeros_like(ys)
         with torch.no_grad():
-            for response_type, response_id in self.setting['response_types'].items():
-                y_transformed[:,:,response_id] = self.setting['response_transform'][response_type](y[:,:,response_id])
-                ys_transformed[:,:,response_id] = self.setting['response_transform'][response_type](ys[:,:,response_id])
+            for response_type, response_id in self.setting.response_types.items():
+                y_transformed[:,:,response_id] = self.setting.response_transform[response_type](y[:,:,response_id])
+                ys_transformed[:,:,response_id] = self.setting.response_transform[response_type](ys[:,:,response_id])
 
 
         if mask is not None:
